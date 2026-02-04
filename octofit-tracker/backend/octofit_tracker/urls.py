@@ -33,6 +33,15 @@ router.register(r'workouts', WorkoutViewSet)
 
 @api_view(['GET'])
 def api_root(request, format=None):
+    """
+    API Root endpoint that returns URLs for all available endpoints.
+    
+    In codespace environments, URLs will be in the format:
+    https://$CODESPACE_NAME-8000.app.github.dev/api/[endpoint]/
+    
+    In local environments, URLs will be:
+    http://localhost:8000/api/[endpoint]/
+    """
     return Response({
         'users': request.build_absolute_uri(reverse('user-list', request=request, format=format)),
         'teams': request.build_absolute_uri(reverse('team-list', request=request, format=format)),
