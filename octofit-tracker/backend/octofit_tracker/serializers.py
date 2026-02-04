@@ -16,13 +16,18 @@ class UserSerializer(serializers.ModelSerializer):
 
 class TeamSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
+    member_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Team
-        fields = ['id', 'name', 'description', 'created_at']
+        fields = ['id', 'name', 'description', 'created_at', 'member_count']
     
     def get_id(self, obj):
         return str(obj.id)
+    
+    def get_member_count(self, obj):
+        # Count users with this team's id
+        return User.objects.filter(team_id=str(obj.id)).count()
 
 
 class ActivitySerializer(serializers.ModelSerializer):
@@ -38,13 +43,37 @@ class ActivitySerializer(serializers.ModelSerializer):
 
 class LeaderboardSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
+    user_name = serializers.SerializerMethodField()
+    team_name = serializers.SerializerMethodField()
+    total_calories = serializers.SerializerMethodField()
     
     class Meta:
         model = Leaderboard
-        fields = ['id', 'user_id', 'team_id', 'total_points', 'total_activities', 'rank', 'updated_at']
+        fields = ['id', 'user_id', 'user_name', 'team_id', 'team_name', 'total_points', 'total_activities', 'total_calories', 'rank', 'updated_at']
     
     def get_id(self, obj):
         return str(obj.id)
+    
+    def get_user_name(self, obj):
+        try:
+            user = User.objects.get(id=obj.user_id)
+            return user.name
+        except User.DoesNotExist:
+            return f"User {obj.user_id}"
+    
+    def get_team_name(self, obj):
+        if not obj.team_id:
+            return None
+        try:
+            team = Team.objects.get(id=obj.team_id)
+            return team.name
+        except Team.DoesNotExist:
+            return None
+    
+    def get_total_calories(self, obj):
+        from django.db.models import Sum
+        total = Activity.objects.filter(user_id=obj.user_id).aggregate(Sum('calories'))['calories__sum']
+        return total or 0
 
 
 class WorkoutSerializer(serializers.ModelSerializer):
